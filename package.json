@@ -1,0 +1,15 @@
+
+
+{
+  "name": "sica-maga",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k -n BACKEND,FRONTEND -c blue,green \"npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run dev\" \"npm --prefix ./sica-maga-frontend1/sica-maga-frontend run dev -- --port 3001\"",
+    "backend": "npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run dev",
+    "frontend": "npm --prefix ./sica-maga-frontend1/sica-maga-frontend run dev -- --port 3001"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
