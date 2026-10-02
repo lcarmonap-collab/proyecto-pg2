@@ -7,7 +7,12 @@
   "scripts": {
     "dev": "concurrently -k -n BACKEND,FRONTEND -c blue,green \"npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run dev\" \"npm --prefix ./sica-maga-frontend1/sica-maga-frontend run dev -- --port 3001\"",
     "backend": "npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run dev",
-    "frontend": "npm --prefix ./sica-maga-frontend1/sica-maga-frontend run dev -- --port 3001"
+    "frontend": "npm --prefix ./sica-maga-frontend1/sica-maga-frontend run dev -- --port 3001",
+    "install:all": "npm install && npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver install && npm --prefix ./sica-maga-frontend1/sica-maga-frontend install",
+    "verify": "npm run verify:backend && npm run verify:frontend",
+    "verify:backend": "npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run verify",
+    "verify:frontend": "npm --prefix ./sica-maga-frontend1/sica-maga-frontend run build",
+    "db:check": "npm --prefix ./sica-maga-backend-sqlserver/sica-maga-backend-sqlserver run db:check"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Variables de entorno / secretos
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# Builds y caches
+.next/
+**/.next/
+dist/
+**/dist/
+coverage/
+**/coverage/
+*.tsbuildinfo
+*.log
+
+# Archivos temporales / empaquetados
+*.tar.gz
+*.zip
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Permitimos explícitamente el .env LOCAL de SICA-MAGA
+!sica-maga-backend-sqlserver/sica-maga-backend-sqlserver/.env

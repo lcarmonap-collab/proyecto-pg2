@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema, type LoginForm as LoginValues } from '@/schemas/auth.schema';
+import {
+  loginSchema,
+  type LoginForm as LoginValues,
+} from '@/schemas/auth.schema';
+
 import { useAuth } from './auth-context';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,9 +19,16 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: {
+      errors,
+      isSubmitting,
+    },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      correo: '',
+      password: '',
+    },
   });
 
   const onSubmit = async (data: LoginValues) => {
@@ -26,16 +37,24 @@ export function LoginForm() {
     try {
       await login(data);
     } catch (error: any) {
-      setServerError(
+      console.error('Error de inicio de sesión:', error);
+
+      const message =
+        error?.response?.data?.error?.message ??
         error?.response?.data?.message ??
-        'No fue posible iniciar sesión.'
-      );
+        error?.message ??
+        'No fue posible iniciar sesión.';
+
+      setServerError(message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-5"
+      noValidate
+    >
       {/* Correo electrónico */}
       <div>
         <label
@@ -50,7 +69,8 @@ export function LoginForm() {
           type="email"
           {...register('correo')}
           autoComplete="username"
-          placeholder="admin@maga.gob.gt"
+          placeholder="admin@sica-maga.local"
+          disabled={isSubmitting}
         />
 
         {errors.correo && (
@@ -75,6 +95,7 @@ export function LoginForm() {
           {...register('password')}
           autoComplete="current-password"
           placeholder="Ingresa tu contraseña"
+          disabled={isSubmitting}
         />
 
         {errors.password && (
@@ -88,20 +109,21 @@ export function LoginForm() {
       {serverError && (
         <div
           role="alert"
+          aria-live="polite"
           className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
         >
           {serverError}
         </div>
       )}
 
-      {/* Botón de acceso */}
+      {/* Botón */}
       <Button
+        type="submit"
         className="w-full"
         disabled={isSubmitting}
       >
         {isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
       </Button>
-
     </form>
   );
 }
