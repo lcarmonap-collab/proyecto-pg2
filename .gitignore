@@ -28,5 +28,3 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Permitimos explícitamente el .env LOCAL de SICA-MAGA
-!sica-maga-backend-sqlserver/sica-maga-backend-sqlserver/.env

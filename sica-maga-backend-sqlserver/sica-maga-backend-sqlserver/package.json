@@ -17,7 +17,7 @@
     "verify": "npm run prisma:validate && npm run prisma:generate && npm run build"
   },
   "dependencies": {
-    "@prisma/client": "^6.15.0",
+    "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -35,7 +35,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.4.0",
-    "prisma": "^6.15.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.4",
     "typescript": "^5.9.2"
   }
