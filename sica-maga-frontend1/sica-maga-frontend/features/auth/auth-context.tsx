@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -15,7 +14,6 @@ import { authService } from '@/services/auth.service';
 import type { Role, Usuario } from '@/types';
 import type { LoginForm } from '@/schemas/auth.schema';
 
-// Estructura del contexto de autenticación
 interface AuthContextValue {
   user: Usuario | null;
   token: string | null;
@@ -25,10 +23,8 @@ interface AuthContextValue {
   hasRole: (...roles: Role[]) => boolean;
 }
 
-// Crear contexto
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Proveedor de autenticación
 export function AuthProvider({
   children,
 }: {
@@ -40,30 +36,59 @@ export function AuthProvider({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Recuperar sesión almacenada
   useEffect(() => {
-    try {
-      const storedToken = sessionStorage.getItem('sica_maga_token');
-      const storedUser = sessionStorage.getItem('sica_maga_user');
+    const restoreSession = async () => {
+      try {
+        const storedToken = sessionStorage.getItem('sica_maga_token');
+        const storedUser = sessionStorage.getItem('sica_maga_user');
+        const storedRefreshToken = sessionStorage.getItem(
+          'sica_maga_refresh_token'
+        );
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser) as Usuario);
+        if (storedToken && storedUser && storedRefreshToken) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser) as Usuario);
+
+          const currentUser = await authService.me();
+
+          setUser(currentUser);
+
+          sessionStorage.setItem(
+            'sica_maga_user',
+            JSON.stringify(currentUser)
+          );
+        }
+      } catch (error) {
+        console.error('Error al recuperar/verificar la sesión:', error);
+
+        sessionStorage.removeItem('sica_maga_token');
+        sessionStorage.removeItem('sica_maga_user');
+        sessionStorage.removeItem('sica_maga_refresh_token');
+
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error al recuperar la sesión:', error);
+    };
 
-      sessionStorage.removeItem('sica_maga_token');
-      sessionStorage.removeItem('sica_maga_user');
-    } finally {
-      setLoading(false);
-    }
+    restoreSession();
   }, []);
 
-  // Cerrar sesión
   const logout = useCallback(() => {
+    const refreshToken = sessionStorage.getItem(
+      'sica_maga_refresh_token'
+    );
+
+    if (refreshToken) {
+      authService.logout(refreshToken).catch((error) => {
+        console.error('Error al cerrar sesión en el servidor:', error);
+      });
+    }
+
     sessionStorage.removeItem('sica_maga_token');
     sessionStorage.removeItem('sica_maga_user');
+    sessionStorage.removeItem('sica_maga_refresh_token');
 
     setToken(null);
     setUser(null);
@@ -71,7 +96,6 @@ export function AuthProvider({
     router.replace('/login');
   }, [router]);
 
-  // Escuchar errores de autenticación
   useEffect(() => {
     const handler = () => logout();
 
@@ -82,42 +106,43 @@ export function AuthProvider({
     };
   }, [logout]);
 
-  // Iniciar sesión
   const login = useCallback(
     async (payload: LoginForm) => {
-      // Solicitar autenticación al backend
       const result = await authService.login(payload);
 
-      // Validar respuesta
-      if (!result?.accessToken || !result?.usuario) {
+      if (
+        !result?.accessToken ||
+        !result?.refreshToken ||
+        !result?.usuario
+      ) {
         throw new Error(
           'La respuesta del servidor no contiene los datos de autenticación esperados.'
         );
       }
 
-      // Guardar accessToken
       sessionStorage.setItem(
         'sica_maga_token',
         result.accessToken
       );
 
-      // Guardar datos del usuario
+      sessionStorage.setItem(
+        'sica_maga_refresh_token',
+        result.refreshToken
+      );
+
       sessionStorage.setItem(
         'sica_maga_user',
         JSON.stringify(result.usuario)
       );
 
-      // Actualizar estado global
       setToken(result.accessToken);
       setUser(result.usuario);
 
-      // Redirigir al dashboard
       router.replace('/dashboard');
     },
     [router]
   );
 
-  // Verificar permisos por rol
   const hasRole = useCallback(
     (...roles: Role[]) => {
       return !!user && roles.includes(user.rol);
@@ -125,7 +150,6 @@ export function AuthProvider({
     [user]
   );
 
-  // Valores disponibles para los componentes
   const value = useMemo(
     () => ({
       user,
@@ -145,7 +169,6 @@ export function AuthProvider({
   );
 }
 
-// Hook para consumir el contexto
 export function useAuth() {
   const context = useContext(AuthContext);
 
@@ -157,4 +180,3 @@ export function useAuth() {
 
   return context;
 }
-

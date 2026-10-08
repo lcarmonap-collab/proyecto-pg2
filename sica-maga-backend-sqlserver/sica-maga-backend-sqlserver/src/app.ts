@@ -7,6 +7,7 @@ import { env } from './config/env';
 import { prisma } from './config/prisma';
 import authRoutes from './routes/auth.routes';
 import productorRoutes from './routes/productor.routes';
+import catalogoRoutes from './routes/catalogo.routes';
 import parcelaRoutes from './routes/parcela.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/not-found.middleware';
@@ -42,6 +43,7 @@ app.get('/health', async (_req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/productores', productorRoutes);
+app.use('/api/v1/catalogos', catalogoRoutes);
 app.use('/api/v1/parcelas', parcelaRoutes);
 
 app.use(notFound);

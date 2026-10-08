@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../sica-maga-backend-sqlserver"
+		},
+		{
+			"path": "../sica-maga-frontend1"
+		}
+	]
+}

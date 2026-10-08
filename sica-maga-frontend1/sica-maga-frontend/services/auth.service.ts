@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import type {
   ApiResponse,
   AuthResponse,
+  RefreshTokenResponse,
   Usuario,
 } from '@/types';
 
@@ -48,5 +49,35 @@ export const authService = {
     }
 
     return response.data.data;
+  },
+
+  async refresh(
+    refreshToken: string
+  ): Promise<AuthResponse> {
+    const response =
+      await api.post<ApiResponse<AuthResponse>>(
+        '/auth/refresh',
+        { refreshToken }
+      );
+
+    if (
+      !response.data?.success ||
+      !response.data?.data
+    ) {
+      throw new Error(
+        'No fue posible renovar la sesión.'
+      );
+    }
+
+    return response.data.data;
+  },
+
+  async logout(
+    refreshToken: string
+  ): Promise<void> {
+    await api.post<ApiResponse<null>>(
+      '/auth/logout',
+      { refreshToken }
+    );
   },
 };

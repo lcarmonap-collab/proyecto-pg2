@@ -39,6 +39,7 @@ model Municipio {
   productores    Productor[]
   usuarios       Usuario[]
 
+  @@unique([codigo, departamentoId])
   @@map("Municipios")
 }
 
@@ -49,6 +50,7 @@ model Comunidad {
   municipio   Municipio   @relation(fields: [municipioId], references: [id], onUpdate: NoAction)
   productores Productor[]
 
+  @@unique([nombre, municipioId])
   @@map("Comunidades")
 }
 
@@ -122,7 +124,7 @@ model Parcela {
 
 model Cultivo {
   id          Int       @id @default(autoincrement())
-  nombre      String    @db.VarChar(100)
+  nombre      String    @unique @db.VarChar(100)
   descripcion String?   @db.VarChar(255)
   cosechas    Cosecha[]
 
@@ -148,7 +150,7 @@ model Cosecha {
 
 model TipoFertilizante {
   id              Int             @id @default(autoincrement())
-  nombre          String          @db.VarChar(100)
+  nombre          String          @unique @db.VarChar(100)
   fertilizaciones Fertilizacion[]
 
   @@map("TiposFertilizantes")
@@ -171,7 +173,7 @@ model Fertilizacion {
 
 model Plaga {
   id          Int          @id @default(autoincrement())
-  nombre      String       @db.VarChar(100)
+  nombre      String       @unique @db.VarChar(100)
   incidencias Incidencia[]
 
   @@map("Plagas")

@@ -1,3 +1,33 @@
+export interface Productor {
+  id: number;
+  cui: string;
+  nombres: string;
+  apellidos: string;
+  telefono?: string | null;
+  direccion?: string | null;
+  cooperativa?: string | null;
+  fechaRegistro: string;
+  departamentoId: number;
+  municipioId: number;
+  comunidadId?: number | null;
+
+  departamento?: {
+    id: number;
+    nombre: string;
+  } | null;
+
+  municipio?: {
+    id: number;
+    nombre: string;
+  } | null;
+
+  comunidad?: {
+    id: number;
+    nombre: string;
+  } | null;
+
+  parcelas?: unknown[];
+}
 
 export type Role =
   | 'SUPERADMIN'
@@ -5,110 +35,48 @@ export type Role =
   | 'CONSULTOR_AUDITOR';
 
 export interface Usuario {
-  // Identificador del usuario
   id: number;
-
-  // Información personal
-  nombreCompleto: string;
-  correo: string;
-
-  // Rol asignado
-  rol: Role;
-
-  // Información geográfica opcional
-  departamentoId?: number;
-  municipioId?: number;
-
-  // Campos de compatibilidad con componentes existentes
-  idUsuario?: number;
+  nombres?: string;
+  apellidos?: string;
+  nombre?: string;
+  nombreCompleto?: string;
+  correo?: string;
   usuario?: string;
-  estado?: boolean;
+  rol: Role;
+  rolId?: number;
+  activo?: boolean;
 }
 
-// Respuesta de autenticación del backend
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+  };
+  message?: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   usuario: Usuario;
 }
 
-// Respuesta de renovación de token
 export interface RefreshTokenResponse {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
 }
 
-// Productores agrícolas
-export interface Productor {
-  idProductor: number;
-  idComunidad: number;
-  nombres: string;
-  apellidos: string;
-  dpi?: string;
-  telefono?: string;
-  correo?: string;
-  direccion?: string;
-  genero?: 'Masculino' | 'Femenino' | 'Otro';
-  fechaNacimiento?: string;
-  cooperativa?: string;
-  fechaRegistro: string;
-  estado: boolean;
-  comunidad?: string;
-  municipio?: string;
-  departamento?: string;
-}
-
-// Respuesta de listado de productores
-export interface ProductorListResponse {
-  data: Productor[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-// Parcelas agrícolas
 export interface Parcela {
-  idParcela: number;
-  idProductor: number;
-  nombreParcela: string;
-  areaHectareas: number;
-  areaManzanas?: number;
-  latitud?: number;
-  longitud?: number;
-  altitudMetros?: number;
-  tipoSuelo?: string;
-  sistemaRiego?: string;
-  tenenciaTierra?: 'Propia' | 'Arrendada' | 'Comunal' | 'Otra';
-  estado: boolean;
-  productor?: string;
-}
-
-// Cultivos
-export interface Cultivo {
-  idCultivo: number;
-  idTipoCultivo: number;
-  nombreCultivo: string;
-  unidadMedida: string;
-  estado: boolean;
-}
-
-// Programas de apoyo
-export interface ProgramaApoyo {
-  idPrograma: number;
-  nombrePrograma: string;
-  descripcion?: string;
-  tipoPrograma?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-  estado: boolean;
-}
-
-// Respuesta estándar de la API
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
+  id: number;
+  codigo: string;
+  extension: number;
+  tenenciaTierra: string;
+  latitud: number;
+  longitud: number;
+  fechaRegistro: string;
+  productorId: number;
+  departamentoId: number;
+  municipioId: number;
 }
