@@ -14,7 +14,8 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "db:check": "tsx src/scripts/check-db.ts",
-    "verify": "npm run prisma:validate && npm run prisma:generate && npm run build"
+    "verify": "npm run prisma:validate && npm run prisma:generate && npm run build",
+    "catalogos:ine": "tsx prisma/import-lugares-poblados-ine.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

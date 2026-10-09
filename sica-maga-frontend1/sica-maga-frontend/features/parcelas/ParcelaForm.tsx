@@ -1,19 +1,30 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import {
   parcelaSchema,
   type ParcelaForm as ParcelaValues,
 } from '@/schemas/parcela.schema';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+
+import {
+  catalogoService,
+  type Departamento,
+  type Municipio,
+} from '@/services/catalogo.service';
+
+import { productorService } from '@/services/productor.service';
+import { parcelaService } from '@/services/parcela.service';
 import type { Productor } from '@/types';
-import { useState } from 'react';
 
 const ParcelMap = dynamic(
-  () => import('./ParcelMap').then((m) => m.ParcelMap),
+  () => import('./ParcelMap').then((module) => module.ParcelMap),
   {
     ssr: false,
     loading: () => (
@@ -24,101 +35,292 @@ const ParcelMap = dynamic(
   }
 );
 
-export function ParcelaForm({
-  productores = [],
-}: {
-  productores?: Productor[];
-}) {
+export function ParcelaForm() {
+  const [productores, setProductores] = useState<Productor[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [loadingCatalogos, setLoadingCatalogos] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [coordinates, setCoordinates] = useState<
     { lat: number; lng: number } | undefined
   >();
 
   const {
     register,
+    watch,
     setValue,
+    reset,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ParcelaValues>({
     resolver: zodResolver(parcelaSchema),
     defaultValues: {
-      tenenciaTierra: 'Propia',
+      codigo: '',
+      productorId: 0,
+      departamentoId: 0,
+      municipioId: 0,
+      tenencia: 'PROPIA',
     },
   });
 
-  const onSubmit = async (data: ParcelaValues) => {
-    console.log('Payload listo para POST /parcelas:', data);
+  const departamentoId = watch('departamentoId');
 
-    // Aquí conectaremos parcelaService.create(data)
-    // cuando habilitemos el alta.
-  };
+  useEffect(() => {
+    const cargarCatalogos = async () => {
+      setLoadingCatalogos(true);
+      setError('');
+
+      try {
+        const [productoresResponse, departamentosResponse] =
+          await Promise.all([
+            productorService.list({
+              page: 1,
+              limit: 100,
+            }),
+            catalogoService.departamentos(),
+          ]);
+
+        setProductores(productoresResponse.data.items);
+        setDepartamentos(departamentosResponse);
+      } catch (err: any) {
+        setError(
+          err?.response?.data?.error?.message ||
+            'No se pudieron cargar los datos necesarios para registrar la parcela.'
+        );
+      } finally {
+        setLoadingCatalogos(false);
+      }
+    };
+
+    cargarCatalogos();
+  }, []);
+
+  useEffect(() => {
+    setMunicipios([]);
+    setValue('municipioId', 0);
+
+    if (!departamentoId) {
+      return;
+    }
+
+    const cargarMunicipios = async () => {
+      try {
+        const data = await catalogoService.municipios(
+          Number(departamentoId)
+        );
+
+        setMunicipios(data);
+      } catch (err: any) {
+        setError(
+          err?.response?.data?.error?.message ||
+            'No se pudieron cargar los municipios.'
+        );
+      }
+    };
+
+    cargarMunicipios();
+  }, [departamentoId, setValue]);
 
   const selectCoordinates = (lat: number, lng: number) => {
-    setCoordinates({ lat, lng });
+    const next = {
+      lat: Number(lat.toFixed(7)),
+      lng: Number(lng.toFixed(7)),
+    };
 
-    setValue('latitud', Number(lat.toFixed(7)), {
+    setCoordinates(next);
+
+    setValue('latitud', next.lat, {
+      shouldDirty: true,
       shouldValidate: true,
     });
 
-    setValue('longitud', Number(lng.toFixed(7)), {
+    setValue('longitud', next.lng, {
+      shouldDirty: true,
       shouldValidate: true,
     });
+  };
+
+  const onSubmit = async (data: ParcelaValues) => {
+    setError('');
+    setSuccess('');
+
+    try {
+      await parcelaService.create(data);
+
+      setSuccess('Parcela registrada correctamente.');
+      setCoordinates(undefined);
+
+      reset({
+        codigo: '',
+        productorId: 0,
+        departamentoId: 0,
+        municipioId: 0,
+        tenencia: 'PROPIA',
+      });
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.error?.message ||
+          err?.message ||
+          'No se pudo registrar la parcela.'
+      );
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6"
+      noValidate
+    >
+      {error && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+        >
+          {error}
+        </div>
+      )}
 
-        {/* PRODUCTOR */}
+      {success && (
+        <div
+          role="status"
+          className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700"
+        >
+          {success}
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Productor
+            Código de parcela *
+          </label>
+
+          <Input
+            {...register('codigo')}
+            placeholder="Ej. PAR-001"
+            disabled={isSubmitting}
+          />
+
+          {errors.codigo && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.codigo.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Productor *
           </label>
 
           <select
-            {...register('idProductor')}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+            {...register('productorId', {
+              valueAsNumber: true,
+            })}
+            disabled={loadingCatalogos || isSubmitting}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:bg-slate-100"
           >
-            <option value="">Seleccione...</option>
+            <option value={0}>Seleccione productor</option>
 
-            {productores.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombres} {p.apellidos}
+            {productores.map((productor) => (
+              <option
+                key={productor.id}
+                value={productor.id}
+              >
+                {productor.nombres} {productor.apellidos}
               </option>
             ))}
           </select>
 
-          {errors.idProductor && (
+          {errors.productorId && (
             <p className="mt-1 text-xs text-red-600">
-              {errors.idProductor.message}
+              {errors.productorId.message}
+            </p>
+          )}
+
+          {!loadingCatalogos && productores.length === 0 && (
+            <p className="mt-1 text-xs text-amber-700">
+              Debe registrar al menos un productor antes de crear una parcela.
             </p>
           )}
         </div>
 
-        {/* NOMBRE DE PARCELA */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Nombre de parcela
+            Departamento *
           </label>
 
-          <Input {...register('nombreParcela')} />
+          <select
+            {...register('departamentoId', {
+              valueAsNumber: true,
+            })}
+            disabled={loadingCatalogos || isSubmitting}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:bg-slate-100"
+          >
+            <option value={0}>Seleccione departamento</option>
 
-          {errors.nombreParcela && (
+            {departamentos.map((departamento) => (
+              <option
+                key={departamento.id}
+                value={departamento.id}
+              >
+                {departamento.nombre}
+              </option>
+            ))}
+          </select>
+
+          {errors.departamentoId && (
             <p className="mt-1 text-xs text-red-600">
-              {errors.nombreParcela.message}
+              {errors.departamentoId.message}
             </p>
           )}
         </div>
 
-        {/* ÁREA */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Área (hectáreas)
+            Municipio *
+          </label>
+
+          <select
+            {...register('municipioId', {
+              valueAsNumber: true,
+            })}
+            disabled={!departamentoId || isSubmitting}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:bg-slate-100"
+          >
+            <option value={0}>Seleccione municipio</option>
+
+            {municipios.map((municipio) => (
+              <option
+                key={municipio.id}
+                value={municipio.id}
+              >
+                {municipio.nombre}
+              </option>
+            ))}
+          </select>
+
+          {errors.municipioId && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.municipioId.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Área (hectáreas) *
           </label>
 
           <Input
             type="number"
             step="0.01"
-            {...register('areaHectareas')}
+            {...register('areaHectareas', {
+              valueAsNumber: true,
+            })}
+            disabled={isSubmitting}
           />
 
           {errors.areaHectareas && (
@@ -128,33 +330,35 @@ export function ParcelaForm({
           )}
         </div>
 
-        {/* TENENCIA */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Tenencia
+            Tenencia *
           </label>
 
           <select
-            {...register('tenenciaTierra')}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+            {...register('tenencia')}
+            disabled={isSubmitting}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:bg-slate-100"
           >
-            <option value="Propia">Propia</option>
-            <option value="Arrendada">Arrendada</option>
-            <option value="Comunal">Comunal</option>
-            <option value="Otra">Otra</option>
+            <option value="PROPIA">Propia</option>
+            <option value="ARRENDADA">Arrendada</option>
+            <option value="COMUNAL">Comunal</option>
+            <option value="OTRA">Otra</option>
           </select>
         </div>
 
-        {/* LATITUD */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Latitud
+            Latitud *
           </label>
 
           <Input
             type="number"
             step="0.0000001"
-            {...register('latitud')}
+            {...register('latitud', {
+              valueAsNumber: true,
+            })}
+            disabled={isSubmitting}
           />
 
           {errors.latitud && (
@@ -164,16 +368,18 @@ export function ParcelaForm({
           )}
         </div>
 
-        {/* LONGITUD */}
         <div>
           <label className="mb-1 block text-sm font-medium">
-            Longitud
+            Longitud *
           </label>
 
           <Input
             type="number"
             step="0.0000001"
-            {...register('longitud')}
+            {...register('longitud', {
+              valueAsNumber: true,
+            })}
+            disabled={isSubmitting}
           />
 
           {errors.longitud && (
@@ -184,15 +390,14 @@ export function ParcelaForm({
         </div>
       </div>
 
-      {/* MAPA */}
       <div>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between gap-4">
           <h3 className="font-semibold">
             Ubicación geográfica
           </h3>
 
           <span className="text-xs text-slate-500">
-            Haz clic sobre el mapa para seleccionar coordenadas.
+            Haz clic sobre el mapa para seleccionar las coordenadas.
           </span>
         </div>
 
@@ -203,7 +408,6 @@ export function ParcelaForm({
         />
       </div>
 
-      {/* COORDENADAS */}
       <div className="rounded-lg bg-slate-50 p-3 text-sm">
         Coordenadas seleccionadas:{' '}
         <strong>
@@ -213,9 +417,17 @@ export function ParcelaForm({
         </strong>
       </div>
 
-      {/* BOTÓN */}
-      <Button disabled={isSubmitting}>
-        {isSubmitting ? 'Guardando...' : 'Registrar parcela'}
+      <Button
+        type="submit"
+        disabled={
+          isSubmitting ||
+          loadingCatalogos ||
+          productores.length === 0
+        }
+      >
+        {isSubmitting
+          ? 'Guardando...'
+          : 'Registrar parcela'}
       </Button>
     </form>
   );
